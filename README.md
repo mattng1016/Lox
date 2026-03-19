@@ -1,1 +1,1 @@
-# Lox
+Following Crafting Interpreters by Robert Nystrom

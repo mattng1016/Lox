@@ -39,11 +39,12 @@ public class GenerateAst {
             String className = type.split(":")[0].trim(); //String before :
             String fields = type.split(":")[1].trim(); //String after :
             defineType(writer, baseName, className, fields);
-
-            //Base accept() method
-            writer.println();
-            writer.println("    abstract <R> R accept(Visitor<R> visitor);");
         }
+
+        //Base accept() method
+        writer.println();
+        writer.println("    abstract <R> R accept(Visitor<R> visitor);");
+
         writer.println("}");
         writer.close();
     }

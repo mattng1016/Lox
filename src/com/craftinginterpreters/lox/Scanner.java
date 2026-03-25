@@ -87,20 +87,24 @@ class Scanner {
                 break;
             case '/':
                 if (match('/')) {
-                    if (peek() == '*') {
-                        while (peek() != '*' && peekNext() != '/') {
-                            if (isAtEnd()) {
-                                line++;
-                                advance();
-                            }
-                            advance();
-                        }
-                    }
                     while (peek() != '\n' && !isAtEnd()) {
                         advance();
                     }
-
-                } else {
+                } else if (match('*')) { //For /* */ comment blocks
+                    while (!isAtEnd() && peek() != '*' && peekNext() != '/') {
+                        if (peek() == '\n') {
+                            line++;
+                        }
+                        advance();
+                    }
+                    if (isAtEnd()) {
+                        Lox.error(line, "No closing brackets");
+                        return;
+                    }
+                    advance();
+                    advance();
+                } 
+                else {
                     addToken(SLASH);
                 }
                 break;

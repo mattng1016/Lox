@@ -42,12 +42,25 @@ class Interpreter implements Expr.Visitor<Object>{
                 if (left instanceof String && right instanceof String) {
                     return (String)left + (String)right; //Concatenate string 
                 }
+                if (left instanceof String && !(right instanceof String)) {
+                    String newRight = right.toString();
+                    newRight = newRight.substring(0, newRight.length() - 2);
+                    return (String)left + (String)newRight;
+                }
+                if (!(left instanceof String) && right instanceof String) {
+                    String newLeft = left.toString();
+                    newLeft = newLeft.substring(0, newLeft.length() - 2);
+                    return (String)newLeft + (String)right;
+                }
                 throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
             case MINUS:
                 checkNumberOperands(expr.operator, left, right);
                 return (double)left - (double)right;
             case SLASH:
                 checkNumberOperands(expr.operator, left, right);
+                if ((double)right == 0) {
+                    throw new RuntimeError(expr.operator, "Divisor cannot be 0");
+                }
                 return (double)left / (double)right;
             case STAR:
                 checkNumberOperands(expr.operator, left, right);

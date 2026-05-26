@@ -1,6 +1,38 @@
 package com.craftinginterpreters.lox;
 
-class Interpreter implements Expr.Visitor<Object>{
+import java.util.List;
+
+class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+
+    private Enviroment environment = new Enviroment();
+
+    @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        executeBlock(stmt.statements, new Enviroment(environment));
+        return null;
+    }
+
+    @Override //Evaluates right hand side then stores it in variable
+    public Object visitAssignExpr(Expr.Assign expr) {
+        Object value = evaluate(expr.value);
+        environment.assign(expr.name, value);
+        return value;
+    }
+
+    @Override //Declaration statements
+    public Void visitVarStmt(Stmt.Var stmt) {
+        Object value = null;
+        if (stmt.initializer != null) { //If var has initializer
+            value = evaluate(stmt.initializer);
+        }
+        environment.define(stmt.name.lexeme, value); //Set value to nil (e.g. var a; print a;)
+        return null;
+    }
+
+    @Override //Evaluate variable expression
+    public Object visitVariableExpr(Expr.Variable expr) {
+        return environment.get(expr.name);
+    }
     
     @Override
     public Object visitLiteralExpr(Expr.Literal expr) {
@@ -88,6 +120,21 @@ class Interpreter implements Expr.Visitor<Object>{
         return null;
     }
 
+    //Method for Expression statements
+    @Override
+    public Void visitExpressionStmt(Stmt.Expression stmt) {
+        evaluate(stmt.expression);
+        return null;
+    }
+
+    //Method for Print statements
+    @Override
+    public Void visitPrintStmt(Stmt.Print stmt) {
+        Object value = evaluate(stmt.expression);
+        System.out.println(stringify(value));
+        return null;
+    }
+
     //False and nil are falsey and everything else is truthy
     private boolean isTruthy(Object object) {
         if (object == null) { //Nil
@@ -131,16 +178,23 @@ class Interpreter implements Expr.Visitor<Object>{
         throw new RuntimeError(operator, "Operands must be numbers.");
     }
 
-    //Takes in expression, evaluates it and print it to user
-    void interpet(Expr expression) {
+    //Accepts list of statements (program) and executes it (or error)
+    void interpet(List<Stmt> statements) {
         try {
-            Object value = evaluate(expression);
-            System.out.println(stringify(value));
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
         } catch (RuntimeError error) {
             Lox.runtimeError(error);
         }
     }
 
+    //Helper method for interpet method
+    private void execute(Stmt statement) {
+        statement.accept(this);
+    }
+
+    //Convert Lox value to String
     private String stringify(Object object) {
         if (object == null) {
             return "nil";
@@ -155,5 +209,17 @@ class Interpreter implements Expr.Visitor<Object>{
         }
         
         return object.toString();
+    }
+
+    void executeBlock(List<Stmt> statements, Enviroment enviroment) {
+        Enviroment previous = this.environment;
+        try {
+            this.environment = enviroment;
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
+        } finally {
+            this.environment = previous;
+        }
     }
 }

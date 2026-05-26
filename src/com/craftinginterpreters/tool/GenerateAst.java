@@ -12,11 +12,21 @@ public class GenerateAst {
             System.exit(64);
         }
         String outputDir = args[0]; //Output directoru equals to 1st parameter in terminal
+        
         defineAst(outputDir, "Expr", Arrays.asList( 
+            "Assign : Token name, Expr value",
             "Binary    : Expr left, Token operator, Expr right", //Arithmetic (+, -, *, /) and logic (==, !=, <, <=, >, >=)
             "Grouping   : Expr expression", //parantheses
             "Literal    : Object value",  //Numbers, strings, booleans, nil
-            "Unary      : Token operator, Expr right" //Prefix ! for logical not and - to negate a number
+            "Unary      : Token operator, Expr right", //Prefix ! for logical not and - to negate a number
+            "Variable   : Token name" //For accessing a variable
+        ));
+
+        defineAst(outputDir, "Stmt", Arrays.asList(
+            "Block: List<Stmt> statements", //List of statements inside the block
+            "Expression : Expr expression", 
+            "Print      : Expr expression",
+            "Var        : Token name, Expr initializer"
         ));
     }
 

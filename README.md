@@ -1,1 +1,1 @@
-Following Crafting Interpreters by Robert Nystrom
+Crafting Interpreters by Robert Nystrom

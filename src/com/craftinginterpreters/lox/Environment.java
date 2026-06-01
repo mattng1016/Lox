@@ -3,15 +3,15 @@ package com.craftinginterpreters.lox;
 import java.util.HashMap;
 import java.util.Map;
 
-class Enviroment {
-    final Enviroment enclosing; //Ref to enclosing
+class Environment {
+    final Environment enclosing; //Ref to enclosing
     private final Map<String, Object> values = new HashMap<>();
 
-    Enviroment() { //For global scope
+    Environment() { //For global scope
         enclosing = null;
     }
 
-    Enviroment(Enviroment enclosing) { //Creates new local scope nested inside the given outer one
+    Environment(Environment enclosing) { //Creates new local scope nested inside the given outer one
         this.enclosing = enclosing;
     }
 

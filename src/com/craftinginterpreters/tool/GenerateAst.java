@@ -16,8 +16,10 @@ public class GenerateAst {
         defineAst(outputDir, "Expr", Arrays.asList( 
             "Assign : Token name, Expr value",
             "Binary    : Expr left, Token operator, Expr right", //Arithmetic (+, -, *, /) and logic (==, !=, <, <=, >, >=)
-            "Grouping   : Expr expression", //parantheses
+            "Call       : Expr callee, Token paren, List<Expr> arguments", //Function
+            "Grouping   : Expr expression", //Parantheses
             "Literal    : Object value",  //Numbers, strings, booleans, nil
+            "Logical    : Expr left, Token operator, Expr right", //AND OR  
             "Unary      : Token operator, Expr right", //Prefix ! for logical not and - to negate a number
             "Variable   : Token name" //For accessing a variable
         ));
@@ -25,8 +27,12 @@ public class GenerateAst {
         defineAst(outputDir, "Stmt", Arrays.asList(
             "Block: List<Stmt> statements", //List of statements inside the block
             "Expression : Expr expression", 
+            "Function   : Token name, List<Token> params, " + "List<Stmt> body",
+            "If         : Expr condition, Stmt thenBranch, " + "Stmt elseBranch",
             "Print      : Expr expression",
-            "Var        : Token name, Expr initializer"
+            "Return     : Token keyword, Expr value",
+            "Var        : Token name, Expr initializer",
+            "While      : Expr condition, Stmt body"
         ));
     }
 

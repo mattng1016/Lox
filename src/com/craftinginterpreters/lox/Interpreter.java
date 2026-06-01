@@ -1,14 +1,106 @@
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
-    private Enviroment environment = new Enviroment();
+    final Environment globals = new Environment();
+    private Environment environment = globals;
+
+    //Native Functions
+    Interpreter() {
+        globals.define("clock", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 0;
+            }
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                return (double)System.currentTimeMillis() / 1000.0;
+            }
+            @Override
+            public String toString() {
+                return "<native fn>";
+            }
+        });
+    }
 
     @Override
+    public Void visitReturnStmt(Stmt.Return stmt) {
+        Object value = null;
+        if (stmt.value != null) {
+            value = evaluate(stmt.value);
+        }
+
+        throw new Return(value);
+    }
+
+    @Override //Evaluate function 
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        LoxFunction function = new LoxFunction(stmt);
+        environment.define(stmt.name.lexeme, function);
+        return null;
+    }
+
+    @Override
+    public Object visitCallExpr(Expr.Call expr) {
+        Object callee = evaluate(expr.callee); //Looks up function by name
+
+        List<Object> arguments = new ArrayList<>(); //Evaluate arguments
+        for (Expr argument : expr.arguments) {
+            arguments.add(evaluate(argument));
+        }
+        if (!(callee instanceof LoxCallable)) { //"e.g. paren after string is invalid"
+            throw new RuntimeError(expr.paren, "Can only calll functions and classes.");
+        }
+
+        LoxCallable function = (LoxCallable)callee;
+        if (arguments.size() != function.arity()) {
+            throw new RuntimeError(expr.paren, "Expected " + function.arity() + " çarguments but got " + arguments.size() + ".");
+        }
+
+        return function.call(this, arguments);
+    }
+
+    @Override //Evaluates WHILE loop
+    public Void visitWhileStmt(Stmt.While stmt) {
+        while (isTruthy(evaluate(stmt.condition))) { //If condition is true
+            execute(stmt.body); 
+        }
+        return null;
+    }
+
+    @Override //Evaluates AND OR
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        Object left = evaluate(expr.left);
+
+        if (expr.operator.type == TokenType.OR) {
+            if (isTruthy(left)) { //Short circuit
+                return left;
+            } else {
+                if (!isTruthy(left)) {
+                    return left;
+                }
+            }
+        }
+
+        return evaluate(expr.right);
+    }
+
+    @Override //Evaluates If
+    public Void visitIfStmt(Stmt.If stmt) {
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch);
+        }
+        return null;
+    }
+
+    @Override //Evaluate {}
     public Void visitBlockStmt(Stmt.Block stmt) {
-        executeBlock(stmt.statements, new Enviroment(environment));
+        executeBlock(stmt.statements, new Environment(environment));
         return null;
     }
 
@@ -31,7 +123,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override //Evaluate variable expression
     public Object visitVariableExpr(Expr.Variable expr) {
-        return environment.get(expr.name);
+        Object temp = environment.get(expr.name);
+        if (temp == null) {
+            throw new RuntimeError(expr.name, "Cannot access a variable that has not been initialized.");
+        }
+        return temp;
     }
     
     @Override
@@ -197,7 +293,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     //Convert Lox value to String
     private String stringify(Object object) {
         if (object == null) {
-            return "nil";
+            return null;
         }
 
         if (object instanceof Double) {
@@ -211,15 +307,16 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return object.toString();
     }
 
-    void executeBlock(List<Stmt> statements, Enviroment enviroment) {
-        Enviroment previous = this.environment;
+    //Executes list of statements in given environment
+    void executeBlock(List<Stmt> statements, Environment enviroment) {
+        Environment previous = this.environment; //Updates environment field
         try {
             this.environment = enviroment;
-            for (Stmt statement : statements) {
+            for (Stmt statement : statements) { //Visit all the statements
                 execute(statement);
             }
         } finally {
-            this.environment = previous;
+            this.environment = previous; //Restore previous value
         }
     }
 }
